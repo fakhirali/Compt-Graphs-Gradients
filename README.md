@@ -3,10 +3,7 @@
 
 TODO:
 - [x] Support addition of gradients during backward prop  
-When a Neuron is used in computation twice its gradients should be added during backward prop.  
-for example:  
-$y = a \times a$  
-Right now the gradient of a would be the value of $a$ and not $2a$.  
+- [ ] Support reduce functions like sum, max, min etc.
 - [ ] Support matrix operations
 - [ ] Train a NN on MNIST 
 
