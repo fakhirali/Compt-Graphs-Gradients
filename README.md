@@ -2,7 +2,7 @@
 
 
 TODO:
-- [ ] Support addition of gradients during backward prop  
+- [x] Support addition of gradients during backward prop  
 When a Neuron is used in computation twice its gradients should be added during backward prop.  
 for example:  
 $y = a \times a$  
