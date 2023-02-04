@@ -1,6 +1,9 @@
 import numpy as np
+import copy 
 
-#making computation graph
+#TODO:
+#fix adding in numpy, since numpy broadcasts the data
+
 
 class Neuron:
     def __init__(self, value):
@@ -8,59 +11,76 @@ class Neuron:
         #local derivative
         self.value = value
         self.grad = None
+        self._local_backwards = []
         self.children = []
-        self.is_pointer = False
         
         
     def __repr__(self):
-        return str(f'value: {self.value}, grad: {self.grad}')
-    
-    def _handle_back_add(self,other_neuron=None):
-        if self.grad is not None:
-            new_neuron = Neuron(self.value)
-            new_neuron.is_pointer = True
-            new_neuron.children = [self]
-            self = new_neuron
-        elif other_neuron is not None and other_neuron.grad is not None:
-            new_neuron = Neuron(other_neuron.value)
-            new_neuron.is_pointer = True
-            new_neuron.children = [other_neuron]
-            other_neuron = new_neuron
-        elif other_neuron is not None and other_neuron is self:
-            new_neuron = Neuron(self.value)
-            new_neuron.is_pointer = True
-            new_neuron.children = [other_neuron]
-            other_neuron = new_neuron
-        return self,other_neuron
+        return str(f'{self.value} grad: {self.grad}')
     
     def __mul__(self, other_neuron):
         #if not a neuron then create a neuron
         if not isinstance(other_neuron, Neuron):
             other_neuron = Neuron(other_neuron)
-        self,other_neuron = self._handle_back_add(other_neuron)
+        # self,other_neuron = self._handle_back_add(other_neuron)
+        new_val = self.value * other_neuron.value
         new_neuron = Neuron(self.value * other_neuron.value)
-        self.grad = other_neuron.value
-        other_neuron.grad = self.value
         new_neuron.children = [self,other_neuron]
-            
+
+        t1= other_neuron.value
+        t2= self.value
+        new_neuron._local_backwards.append(lambda x: x*t1)
+        new_neuron._local_backwards.append(lambda x: x*t2)
         return new_neuron
-        
+
+    def __matmul__(self,other_neuron):
+        if not isinstance(other_neuron, Neuron):
+            other_neuron = Neuron(other_neuron)
+        new_neuron = Neuron(self.value @ other_neuron.value)
+        new_neuron.children = [self, other_neuron]
+        t1 = other_neuron.value.T
+        t2 = self.value.T
+        new_neuron._local_backwards.append(lambda x: x @ t1)
+        new_neuron._local_backwards.append(lambda x: t2 @ x)
+        return new_neuron
+    
+    # def __rmatmul__(self,other_neuron):
+    #     #
+    #     if not isinstance(other_neuron, Neuron):
+    #         other_neuron = Neuron(other_neuron)
+    #     new_neuron = Neuron(self.value @ other_neuron.value)
+    #     new_neuron.children = [self, other_neuron]
+    #     t1 = other_neuron.value.T
+    #     t2 = self.value.T
+    #     new_neuron._local_backwards.append(lambda x: x @ t1)
+    #     new_neuron._local_backwards.append(lambda x: t2 @ x)
+    #     return new_neuron
+
     def __add__(self, other_neuron):
         if not isinstance(other_neuron, Neuron):
             other_neuron = Neuron(other_neuron)
-        self,other_neuron = self._handle_back_add(other_neuron)
+        # self,other_neuron = self._handle_back_add(other_neuron)
         new_neuron = Neuron(self.value + other_neuron.value)
-        self.grad = 1
-        other_neuron.grad = 1
         new_neuron.children = [self,other_neuron]
+        new_neuron._local_backwards.append(lambda x: x)
+        new_neuron._local_backwards.append(lambda x: x)
         return new_neuron
     
+
+    def sum(self):
+        assert isinstance(self.value, np.ndarray), "Has to be a numpy array to sum"
+        new_neuron = Neuron(self.value.sum())
+        new_neuron.children = [self]
+        t1 = self.value.shape
+        new_neuron._local_backwards.append(lambda x: np.ones(t1))
+        return new_neuron
+
     #setting right add and mul to mul and add
     __radd__ = __add__
     __rmul__ = __mul__
     
     def __neg__(self):
-        self,other_neuron = self._handle_back_add()
+        # self,other_neuron = self._handle_back_add()
         minus_one = Neuron(-1)
         return self * minus_one
     
@@ -85,39 +105,83 @@ class Neuron:
             other_neuron = Neuron(other_neuron)
         return self.mul_inverse() * other_neuron
     
+    def __lt__(self, other_neuron):
+        if not isinstance(other_neuron, Neuron):
+            other_neuron = Neuron(other_neuron)
+        return self.value < other_neuron.value
+    
+    def __gt__(self, other_neuron):
+        if not isinstance(other_neuron, Neuron):
+            other_neuron = Neuron(other_neuron)
+        return self.value > other_neuron.value
+    def __eq__(self, other_neuron):
+        if not isinstance(other_neuron, Neuron):
+            other_neuron = Neuron(other_neuron)
+        return self.value == other_neuron.value
+
+    def __ge__(self, other_neuron):
+        if not isinstance(other_neuron, Neuron):
+            other_neuron = Neuron(other_neuron)
+        return self.value >= other_neuron.value
+
+    def __le__(self, other_neuron):
+        if not isinstance(other_neuron, Neuron):
+            other_neuron = Neuron(other_neuron)
+        return self.value <= other_neuron.value
+
+    def __float__(self):
+        return self.value
+
     def mul_inverse(self):
-        self,other_neuron = self._handle_back_add()
+        # self,other_neuron = self._handle_back_add()
         new_neuron = Neuron(1/self.value)
-        self.grad = -1/(self.value**2)
+        temp = -1/(self.value**2)
+        new_neuron._local_backwards.append(lambda x: x * temp)
         new_neuron.children = [self]
         return new_neuron
-        
     
+    def zero_grad(self):
+        self.grad = None
+
     def log(self):
-        self,other_neuron = self._handle_back_add()
         new_neuron = Neuron(np.log(self.value))
-        self.grad = 1/self.value
+        temp = 1/self.value
         new_neuron.children = [self]
+        new_neuron._local_backwards.append(lambda x: x * 1/temp)
         return new_neuron
          
         
     def exp(self):
-        self,other_neuron = self._handle_back_add()
+        # self,other_neuron = self._handle_back_add()
         new_neuron = Neuron(np.exp(self.value))
-        self.grad = np.exp(self.value)
+        temp = np.exp(self.value)
+        new_neuron._local_backwards.append(lambda x: x *temp)
         new_neuron.children = [self]
         return new_neuron
-        
+            
     def backward(self):
         assert self.grad is None
-        self.grad = 1
+        if isinstance(self.value, np.ndarray):
+            self.grad = np.ones_like(self.value)
+        else:
+            self.grad = 1
         root = self
         stack = [root]
         while len(stack) != 0:
             root = stack.pop(0)
-            for child in root.children:
-                if root.is_pointer:
-                    child.grad += root.grad
+            for child, local_backwards in zip(root.children, root._local_backwards):
+                # print(root, child)
+                if not (child.grad is None): 
+                    child.grad += local_backwards(root.grad)
                 else:
-                    child.grad *= root.grad
+                    child.grad = local_backwards(root.grad)
                 stack.append(child)
+
+
+ 
+
+
+
+    
+
+
