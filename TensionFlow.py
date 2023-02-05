@@ -1,5 +1,6 @@
 import numpy as np
 import copy 
+import warnings
 
 #TODO:
 #fix adding in numpy, since numpy broadcasts the data
@@ -22,6 +23,9 @@ class Neuron:
         #if not a neuron then create a neuron
         if not isinstance(other_neuron, Neuron):
             other_neuron = Neuron(other_neuron)
+        if isinstance(self.value, np.ndarray) and isinstance(other_neuron.value, np.ndarray):
+            assert self.value.shape == other_neuron.value.shape, "Shapes must be same to perform element-wise multiplication"
+
         # self,other_neuron = self._handle_back_add(other_neuron)
         new_val = self.value * other_neuron.value
         new_neuron = Neuron(self.value * other_neuron.value)
@@ -56,9 +60,14 @@ class Neuron:
     #     new_neuron._local_backwards.append(lambda x: t2 @ x)
     #     return new_neuron
 
+    def shape(self):
+        return self.value.shape
+
     def __add__(self, other_neuron):
         if not isinstance(other_neuron, Neuron):
             other_neuron = Neuron(other_neuron)
+        if isinstance(self.value, np.ndarray) and isinstance(other_neuron.value, np.ndarray):
+            assert self.value.shape == other_neuron.value.shape, "Shapes must be same to perform element-wise addition"
         # self,other_neuron = self._handle_back_add(other_neuron)
         new_neuron = Neuron(self.value + other_neuron.value)
         new_neuron.children = [self,other_neuron]
@@ -67,12 +76,12 @@ class Neuron:
         return new_neuron
     
 
-    def sum(self):
+    def sum(self, dim=-1):
         assert isinstance(self.value, np.ndarray), "Has to be a numpy array to sum"
-        new_neuron = Neuron(self.value.sum())
+        new_neuron = Neuron(self.value.sum(dim, keepdims=True))
         new_neuron.children = [self]
         t1 = self.value.shape
-        new_neuron._local_backwards.append(lambda x: np.ones(t1))
+        new_neuron._local_backwards.append(lambda x: x * np.ones(t1))
         return new_neuron
 
     #setting right add and mul to mul and add
@@ -136,18 +145,28 @@ class Neuron:
         # self,other_neuron = self._handle_back_add()
         new_neuron = Neuron(1/self.value)
         temp = -1/(self.value**2)
+        print(temp)
         new_neuron._local_backwards.append(lambda x: x * temp)
         new_neuron.children = [self]
         return new_neuron
+    def reshape(self, new_shape):
+        assert isinstance(self.value, np.ndarray)
+        self.value = self.value.reshape(new_shape)
+        return self
     
     def zero_grad(self):
         self.grad = None
 
     def log(self):
-        new_neuron = Neuron(np.log(self.value))
+        new_val = np.log(self.value)
+        if np.inf in new_val or -np.inf in new_val:
+            warnings.warn("inf in log, replacing with zero")
+            new_val[new_val==np.inf] = 0
+            new_val[new_val==-np.inf] = 0
+        new_neuron = Neuron(new_val)
         temp = 1/self.value
         new_neuron.children = [self]
-        new_neuron._local_backwards.append(lambda x: x * 1/temp)
+        new_neuron._local_backwards.append(lambda x: x * temp)
         return new_neuron
          
         
@@ -177,7 +196,16 @@ class Neuron:
                     child.grad = local_backwards(root.grad)
                 stack.append(child)
 
-
+    def backward_zero_grad(self):
+            self.grad = None
+            root = self
+            stack = [root]
+            while len(stack) != 0:
+                root = stack.pop(0)
+                for child, local_backwards in zip(root.children, root._local_backwards):
+                    # print(root, child)
+                    child.grad = None
+                    stack.append(child)
  
 
 
