@@ -145,7 +145,7 @@ class Neuron:
         # self,other_neuron = self._handle_back_add()
         new_neuron = Neuron(1/self.value)
         temp = -1/(self.value**2)
-        print(temp)
+        # print(temp)
         new_neuron._local_backwards.append(lambda x: x * temp)
         new_neuron.children = [self]
         return new_neuron
@@ -177,7 +177,8 @@ class Neuron:
         new_neuron._local_backwards.append(lambda x: x *temp)
         new_neuron.children = [self]
         return new_neuron
-            
+    def argmax(self,dim=None):
+        return Neuron(self.value.argmax(axis=dim))        
     def backward(self):
         assert self.grad is None
         if isinstance(self.value, np.ndarray):
