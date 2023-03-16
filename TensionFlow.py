@@ -6,6 +6,11 @@ import warnings
 #fix adding in numpy, since numpy broadcasts the data
 
 
+
+
+
+
+#Neuron Class
 class Neuron:
     def __init__(self, value):
         #value
@@ -15,7 +20,14 @@ class Neuron:
         self._local_backwards = []
         self.children = []
         
-        
+    def __getitem__(self,idx):
+          return_val = self.value[idx]
+          if not isinstance(return_val,np.ndarray):
+              return return_val
+          else:
+            return Neuron(self.value[idx])
+    def __len__(self):
+        return len(self.value)
     def __repr__(self):
         return str(f'{self.value} grad: {self.grad}')
     
@@ -48,18 +60,6 @@ class Neuron:
         new_neuron._local_backwards.append(lambda x: t2 @ x)
         return new_neuron
     
-    # def __rmatmul__(self,other_neuron):
-    #     #
-    #     if not isinstance(other_neuron, Neuron):
-    #         other_neuron = Neuron(other_neuron)
-    #     new_neuron = Neuron(self.value @ other_neuron.value)
-    #     new_neuron.children = [self, other_neuron]
-    #     t1 = other_neuron.value.T
-    #     t2 = self.value.T
-    #     new_neuron._local_backwards.append(lambda x: x @ t1)
-    #     new_neuron._local_backwards.append(lambda x: t2 @ x)
-    #     return new_neuron
-
     def shape(self):
         return self.value.shape
 
@@ -210,7 +210,12 @@ class Neuron:
  
 
 
+#helper funcs
 
-    
-
-
+def one_hot(x: Neuron, classes:int):
+    assert len(x.shape()) == 1, "one hot of 2d matrix not supported"
+    a = np.zeros((len(x), classes))
+    for i in range(len(x)):
+        a[i][x[i]] = 1
+    return Neuron(a)
+    # new
