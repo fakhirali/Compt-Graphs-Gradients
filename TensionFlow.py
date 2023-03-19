@@ -197,7 +197,7 @@ class Neuron:
                     child.grad = local_backwards(root.grad)
                 stack.append(child)
 
-    def backward_zero_grad(self):
+    def backward_zero_grad(self) -> None:
             self.grad = None
             root = self
             stack = [root]
@@ -212,10 +212,25 @@ class Neuron:
 
 #helper funcs
 
-def one_hot(x: Neuron, classes:int):
+def one_hot(x: Neuron, classes:int) -> Neuron:
     assert len(x.shape()) == 1, "one hot of 2d matrix not supported"
     a = np.zeros((len(x), classes))
     for i in range(len(x)):
         a[i][x[i]] = 1
     return Neuron(a)
     # new
+def Softmax(x: Neuron) -> Neuron:
+    e = x.exp()
+    e_s = e.sum(1)
+    out_soft = e / (e_s @ Neuron(np.ones((1, e.shape()[1]))))
+    return out_soft
+    
+    
+def LinearLayer(f_in:int, f_out:int) -> Neuron:
+    neuron = Neuron(np.random.uniform(low=-np.sqrt(1/f_in),
+                                         high=np.sqrt(1/f_in), 
+                                         size=(f_in, f_out)))
+    return neuron
+
+def CrossEntropy(out_soft: Neuron, oh_label: Neuron) -> Neuron:
+    return -(out_soft * oh_label).sum().log().sum(0)
