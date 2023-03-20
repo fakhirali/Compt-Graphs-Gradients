@@ -1,6 +1,7 @@
 import numpy as np
 import copy 
 import warnings
+from typing import Tuple
 
 #TODO:
 #fix adding in numpy, since numpy broadcasts the data
@@ -150,6 +151,7 @@ class Neuron:
         new_neuron.children = [self]
         return new_neuron
     def reshape(self, new_shape):
+        assert 1 in self.shape()
         assert isinstance(self.value, np.ndarray)
         self.value = self.value.reshape(new_shape)
         return self
@@ -179,6 +181,17 @@ class Neuron:
         return new_neuron
     def argmax(self,dim=None):
         return Neuron(self.value.argmax(axis=dim))        
+
+    def broadcast(self, new_shape:int):
+        assert 1 in self.shape(), "There must be a 1 to broadcast the neuron"
+        assert len(self.shape()) == 2, "Only supports broadcasting of 2d neurons"
+        if self.shape()[0] == 1:
+            new_neuron = Neuron(np.ones((new_shape,1))) @ self
+        else: 
+            
+            new_neuron =  self @ Neuron(np.ones((1, new_shape)))
+        return new_neuron 
+
     def backward(self):
         assert self.grad is None
         if isinstance(self.value, np.ndarray):
@@ -222,7 +235,7 @@ def one_hot(x: Neuron, classes:int) -> Neuron:
 def Softmax(x: Neuron) -> Neuron:
     e = x.exp()
     e_s = e.sum(1)
-    out_soft = e / (e_s @ Neuron(np.ones((1, e.shape()[1]))))
+    out_soft = e / (e_s @ Neuron(np.ones((1, e.shape()[1]))))#pretty much a broadcast
     return out_soft
     
     
