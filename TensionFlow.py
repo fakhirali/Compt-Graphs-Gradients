@@ -30,7 +30,8 @@ class Neuron:
     def __len__(self):
         return len(self.value)
     def __repr__(self):
-        return str(f'{self.value} grad: {self.grad}')
+        # return str(f'{self.value} grad: {self.grad}')
+        return str(f'{self.value}')
     
     def __mul__(self, other_neuron):
         #if not a neuron then create a neuron
@@ -237,12 +238,14 @@ def Softmax(x: Neuron) -> Neuron:
     e_s = e.sum(1)
     out_soft = e / (e_s @ Neuron(np.ones((1, e.shape()[1]))))#pretty much a broadcast
     return out_soft
-    
+def ReLU(x: Neuron)  -> Neuron:
+    mask = Neuron(1 * (x.value > 0))
+    return x * mask
     
 def LinearLayer(f_in:int, f_out:int) -> Neuron:
     neuron = Neuron(np.random.uniform(low=-np.sqrt(1/f_in),
-                                         high=np.sqrt(1/f_in), 
-                                         size=(f_in, f_out)))
+                                        high=np.sqrt(1/f_in), 
+                                        size=(f_in, f_out)))
     return neuron
 
 def CrossEntropy(out_soft: Neuron, oh_label: Neuron) -> Neuron:
