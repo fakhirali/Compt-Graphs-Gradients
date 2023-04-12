@@ -6,9 +6,8 @@ TODO:
 - [x] Support reduce functions like sum, max, min etc.
 - [x] Support matrix operations
 - [x] Train a NN on MNIST 
+- [ ] Figure out slicing
 - [ ] Test every form of gradient using pytorch
 
 Notes:
-The numpy broadcasting system is very confusion.  
-First don't allow element-wise operations without same shapes
-Later on can write a broadcaster
+Slicing does not really work

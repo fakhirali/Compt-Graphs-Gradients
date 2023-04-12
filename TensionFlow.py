@@ -4,11 +4,6 @@ import warnings
 from typing import Tuple
 
 #TODO:
-#fix adding in numpy, since numpy broadcasts the data
-
-
-
-
 
 
 #Neuron Class
@@ -20,18 +15,20 @@ class Neuron:
         self.grad = None
         self._local_backwards = []
         self.children = []
-        
+            
     def __getitem__(self,idx):
-          return_val = self.value[idx]
-          if not isinstance(return_val,np.ndarray):
-              return return_val
-          else:
+        return_val = self.value[idx]
+        if not isinstance(return_val,np.ndarray):
+            return return_val
+        else:
             return Neuron(self.value[idx])
+    
     def __len__(self):
         return len(self.value)
+
     def __repr__(self):
         # return str(f'{self.value} grad: {self.grad}')
-        return str(f'{self.value}')
+        return str(f'Tension: {self.value}')
     
     def __mul__(self, other_neuron):
         #if not a neuron then create a neuron
@@ -189,7 +186,6 @@ class Neuron:
         if self.shape()[0] == 1:
             new_neuron = Neuron(np.ones((new_shape,1))) @ self
         else: 
-            
             new_neuron =  self @ Neuron(np.ones((1, new_shape)))
         return new_neuron 
 
@@ -234,7 +230,7 @@ def one_hot(x: Neuron, classes:int) -> Neuron:
     return Neuron(a)
     # new
 def Softmax(x: Neuron) -> Neuron:
-    e = x.exp()
+    e = (x).exp()
     e_s = e.sum(1)
     out_soft = e / (e_s @ Neuron(np.ones((1, e.shape()[1]))))#pretty much a broadcast
     return out_soft
@@ -242,11 +238,17 @@ def ReLU(x: Neuron)  -> Neuron:
     mask = Neuron(1 * (x.value > 0))
     return x * mask
     
-def LinearLayer(f_in:int, f_out:int) -> Neuron:
+def LinearLayer(f_in:int, f_out:int, bias=True) -> Neuron:
     neuron = Neuron(np.random.uniform(low=-np.sqrt(1/f_in),
                                         high=np.sqrt(1/f_in), 
                                         size=(f_in, f_out)))
-    return neuron
+    if bias:
+        bias_neuron = Neuron(np.random.uniform(low=-np.sqrt(1/f_in),
+                                        high=np.sqrt(1/f_in), 
+                                        size=(1, f_out)))
+        return neuron,bias_neuron
+    else:
+        return neuron
 
 def CrossEntropy(out_soft: Neuron, oh_label: Neuron) -> Neuron:
     return -(out_soft * oh_label).sum().log().sum(0)
