@@ -2,6 +2,7 @@ import numpy as np
 import copy 
 import warnings
 from typing import Tuple
+import graphviz
 
 #TODO:
 
@@ -15,20 +16,25 @@ class Neuron:
         self.grad = None
         self._local_backwards = []
         self.children = []
+        self.op = ''
             
     def __getitem__(self,idx):
         return_val = self.value[idx]
         if not isinstance(return_val,np.ndarray):
             return return_val
         else:
-            return Neuron(self.value[idx])
+            new_neuron = Neuron(self.value[idx])
+            new_neuron.children = [self]
+            new_neuron._local_backwards.append(lambda x: x[idx])
+            new_neuron.op = 'getitem'
+            return new_neuron
     
     def __len__(self):
         return len(self.value)
 
-    def __repr__(self):
-        # return str(f'{self.value} grad: {self.grad}')
-        return str(f'Tension: {self.value}')
+    # def __repr__(self):
+    #     # return str(f'{self.value} grad: {self.grad}')
+    #     return str(f'Tension: {self.value}')
     
     def __mul__(self, other_neuron):
         #if not a neuron then create a neuron
@@ -46,6 +52,7 @@ class Neuron:
         t2= self.value
         new_neuron._local_backwards.append(lambda x: x*t1)
         new_neuron._local_backwards.append(lambda x: x*t2)
+        new_neuron.op = 'mul'
         return new_neuron
 
     def __matmul__(self,other_neuron):
@@ -57,6 +64,7 @@ class Neuron:
         t2 = self.value.T
         new_neuron._local_backwards.append(lambda x: x @ t1)
         new_neuron._local_backwards.append(lambda x: t2 @ x)
+        new_neuron.op = 'matmul'
         return new_neuron
     
     def shape(self):
@@ -72,6 +80,7 @@ class Neuron:
         new_neuron.children = [self,other_neuron]
         new_neuron._local_backwards.append(lambda x: x)
         new_neuron._local_backwards.append(lambda x: x)
+        new_neuron.op = 'add'
         return new_neuron
     
 
@@ -81,6 +90,7 @@ class Neuron:
         new_neuron.children = [self]
         t1 = self.value.shape
         new_neuron._local_backwards.append(lambda x: x * np.ones(t1))
+        new_neuron.op = 'sum'
         return new_neuron
 
     #setting right add and mul to mul and add
@@ -147,7 +157,9 @@ class Neuron:
         # print(temp)
         new_neuron._local_backwards.append(lambda x: x * temp)
         new_neuron.children = [self]
+        new_neuron.op = 'mul_inverse'
         return new_neuron
+
     def reshape(self, new_shape):
         assert 1 in self.shape()
         assert isinstance(self.value, np.ndarray)
@@ -167,6 +179,7 @@ class Neuron:
         temp = 1/self.value
         new_neuron.children = [self]
         new_neuron._local_backwards.append(lambda x: x * temp)
+        new_neuron.op = 'log'
         return new_neuron
          
         
@@ -176,7 +189,9 @@ class Neuron:
         temp = np.exp(self.value)
         new_neuron._local_backwards.append(lambda x: x *temp)
         new_neuron.children = [self]
+        new_neuron.op = 'exp'
         return new_neuron
+
     def argmax(self,dim=None):
         return Neuron(self.value.argmax(axis=dim))        
 
@@ -187,8 +202,38 @@ class Neuron:
             new_neuron = Neuron(np.ones((new_shape,1))) @ self
         else: 
             new_neuron =  self @ Neuron(np.ones((1, new_shape)))
+        new_neuron.op = 'broadcast'
         return new_neuron 
+    
+    def max(self, dim=None):
+        new_neuron = Neuron(self.value.max(axis=dim, keepdims=True))
+        new_neuron.children = [self]
 
+        if dim is None:
+            mask = np.zeros(self.value.shape)
+            mask[np.unravel_index(self.value.argmax(), self.value.shape)] = 1
+        else:
+            expanded_indices = np.expand_dims(np.argmax(self.value, axis=dim), dim)
+            mask = np.zeros_like(self.value)
+            np.put_along_axis(mask, expanded_indices, 1, axis=dim)
+
+        new_neuron._local_backwards.append(lambda x: x * mask)
+        new_neuron.op = 'max'
+        return new_neuron
+
+    def make_graph(self):
+        dot = graphviz.Digraph(comment='Computation Graph')
+        root = self
+        stack = [root]
+        i = 0
+        while len(stack) != 0:
+            root = stack.pop(0)
+            for child in root.children:
+                stack.append(child)
+                dot.edge(root.op+str(root), child.op + str(child), label=str(i))
+                i += 1
+                # print(root, child)
+        return dot 
     def backward(self):
         assert self.grad is None
         if isinstance(self.value, np.ndarray):
@@ -228,12 +273,20 @@ def one_hot(x: Neuron, classes:int) -> Neuron:
     for i in range(len(x)):
         a[i][x[i]] = 1
     return Neuron(a)
-    # new
-def Softmax(x: Neuron) -> Neuron:
-    e = (x).exp()
-    e_s = e.sum(1)
-    out_soft = e / (e_s @ Neuron(np.ones((1, e.shape()[1]))))#pretty much a broadcast
-    return out_soft
+    
+
+#softmax function That takes in a neuron and returns a neuron
+def Softmax(x: Neuron, dim=0) -> Neuron:
+    y = x - x.max(dim).broadcast(x.shape()[dim])
+    # print(y)
+    # y = x
+    # print(y)
+    exp = y.exp()
+    sum_exp = exp.sum(dim)
+    return exp / sum_exp.broadcast(x.shape()[dim])
+
+
+
 def ReLU(x: Neuron)  -> Neuron:
     mask = Neuron(1 * (x.value > 0))
     return x * mask
