@@ -155,9 +155,9 @@ def test_max():
 #test softmax
 def test_softmax():
     for i in range(100):
-        a = np.random.rand(10,10)
+        a = np.random.rand(5,1)
         a = tf.Neuron(a)
-        c = tf.Softmax(a, dim=1)
+        c = a.softmax(dim=1)
         c.sum(None).backward()
         a1 = torch.tensor(a.value, requires_grad=True)
         c1 = torch.softmax(a1, dim=1)

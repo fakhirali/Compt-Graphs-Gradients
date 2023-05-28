@@ -17,7 +17,7 @@ class Neuron:
         self._local_backwards = []
         self.children = []
         self.op = ''
-            
+        
     def __getitem__(self,idx):
         return_val = self.value[idx]
         if not isinstance(return_val,np.ndarray):
@@ -132,10 +132,13 @@ class Neuron:
         if not isinstance(other_neuron, Neuron):
             other_neuron = Neuron(other_neuron)
         return self.value > other_neuron.value
+    
     def __eq__(self, other_neuron):
+        #this is equal to the "is" operator to make toposort in list work
         if not isinstance(other_neuron, Neuron):
             other_neuron = Neuron(other_neuron)
-        return self.value == other_neuron.value
+        return self.__repr__() == other_neuron.__repr__()
+        # return self.value == other_neuron.value
 
     def __ge__(self, other_neuron):
         if not isinstance(other_neuron, Neuron):
@@ -149,6 +152,8 @@ class Neuron:
 
     def __float__(self):
         return self.value
+    def __hash__(self):
+        return hash(self.__repr__())
 
     def mul_inverse(self):
         # self,other_neuron = self._handle_back_add()
@@ -221,36 +226,74 @@ class Neuron:
         new_neuron.op = 'max'
         return new_neuron
 
-    def make_graph(self):
-        dot = graphviz.Digraph(comment='Computation Graph')
+ 
+
+    def _toposort(self):
         root = self
         stack = [root]
-        i = 0
+        visited = []
+        indegree = {root:0}
         while len(stack) != 0:
             root = stack.pop(0)
+            visited.append(root)
             for child in root.children:
-                stack.append(child)
-                dot.edge(root.op+str(root), child.op + str(child), label=str(i))
+                if child not in indegree:
+                    indegree[child] = 0
+                indegree[child] += 1
+                # print(child, visited)
+                if child not in visited:
+                    stack.append(child)
+        return indegree
+
+    def make_graph(self):
+        indegree  = self._toposort()
+        dot = graphviz.Digraph(comment='Computation Graph')
+        i = 0
+        zero_indegree = [self]
+        while len(zero_indegree) != 0:
+            root = zero_indegree.pop(0)
+            for child in root.children:
+                dot.edge(root.op+str(root), child.op + str(child), label=str(i)+' indeg: '+str(indegree[child]))
+                indegree[child] -= 1
+                if indegree[child] == 0:
+                    zero_indegree.append(child)
                 i += 1
-                # print(root, child)
         return dot 
+
     def backward(self):
         assert self.grad is None
+        indegree  = self._toposort()
+    
         if isinstance(self.value, np.ndarray):
             self.grad = np.ones_like(self.value)
         else:
             self.grad = 1
-        root = self
-        stack = [root]
-        while len(stack) != 0:
-            root = stack.pop(0)
+
+        zero_indegree = [self]
+        while len(zero_indegree) != 0:
+            root = zero_indegree.pop(0)
             for child, local_backwards in zip(root.children, root._local_backwards):
                 # print(root, child)
                 if not (child.grad is None): 
                     child.grad += local_backwards(root.grad)
                 else:
                     child.grad = local_backwards(root.grad)
-                stack.append(child)
+                indegree[child] -= 1
+                if indegree[child] == 0:
+                    zero_indegree.append(child)    
+        
+        
+        # root = self
+        # stack = [root]
+        # while len(stack) != 0:
+        #     root = stack.pop(0)
+        #     for child, local_backwards in zip(root.children, root._local_backwards):
+        #         # print(root, child)
+        #         if not (child.grad is None): 
+        #             child.grad += local_backwards(root.grad)
+        #         else:
+        #             child.grad = local_backwards(root.grad)
+        #         stack.append(child)
 
     def backward_zero_grad(self) -> None:
             self.grad = None
@@ -262,6 +305,13 @@ class Neuron:
                     # print(root, child)
                     child.grad = None
                     stack.append(child)
+
+    def softmax(self, dim=0):
+        y = self - self.max(dim).broadcast(self.shape()[dim])
+        exp = y.exp()
+        sum_exp = exp.sum(dim)
+        return exp / sum_exp.broadcast(self.shape()[dim])
+        
  
 
 
@@ -275,15 +325,6 @@ def one_hot(x: Neuron, classes:int) -> Neuron:
     return Neuron(a)
     
 
-#softmax function That takes in a neuron and returns a neuron
-def Softmax(x: Neuron, dim=0) -> Neuron:
-    y = x - x.max(dim).broadcast(x.shape()[dim])
-    # print(y)
-    # y = x
-    # print(y)
-    exp = y.exp()
-    sum_exp = exp.sum(dim)
-    return exp / sum_exp.broadcast(x.shape()[dim])
 
 
 
