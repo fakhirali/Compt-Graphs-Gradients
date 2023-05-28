@@ -6,8 +6,8 @@ TODO:
 - [x] Support reduce functions like sum, max, min etc.
 - [x] Support matrix operations
 - [x] Train a NN on MNIST 
-- [ ] Figure out slicing
-- [ ] Test every form of gradient using pytorch
+- [x] Figure out slicing
+- [x] Test every form of gradient using pytorch
 
 Notes:
 Slicing does not really work
