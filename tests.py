@@ -165,6 +165,18 @@ def test_softmax():
         assert np.allclose(a.grad, a1.grad), f"incorrect answer: {a.grad} {a1.grad}"
         assert np.allclose(c.value, c1.detach().numpy())
 
+def test_sigmoid():
+    for i in range(100):
+        a = np.random.rand(5,1)
+        a = tf.Neuron(a)
+        c = tf.Sigmoid(a)
+        c.sum(None).backward()
+        a1 = torch.tensor(a.value, requires_grad=True)
+        c1 = torch.sigmoid(a1)
+        c1.sum().backward()
+        assert np.allclose(a.grad, a1.grad), f"incorrect answer: {a.grad} {a1.grad}"
+        assert np.allclose(c.value, c1.detach().numpy())
+
 if __name__ == "__main__":
     test_add()
     test_mul()
@@ -174,6 +186,7 @@ if __name__ == "__main__":
     test_exp()
     test_broadcast()
     test_max()
+    test_sigmoid()
 
     test_softmax()
     print("All tests passed")

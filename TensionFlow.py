@@ -30,7 +30,7 @@ class Neuron:
             new_neuron._local_backwards.append(lambda x: x * mask)
             new_neuron.op = 'getitem'
             return new_neuron
-    
+
     def __len__(self):
         return len(self.value)
 
@@ -242,7 +242,7 @@ class Neuron:
                 if child not in indegree:
                     indegree[child] = 0
                 indegree[child] += 1
-                # print(child, visited)
+                # print(σchild, visited)
                 if child not in visited:
                     stack.append(child)
         return indegree
@@ -314,9 +314,39 @@ class Neuron:
         exp = y.exp()
         sum_exp = exp.sum(dim)
         return exp / sum_exp.broadcast(self.shape()[dim])
-        
- 
 
+class LinearLayer:
+    def __init__(self, f_in, f_out, bias=True):
+        self.bias = bias
+        self.w =  neuron = Neuron(np.random.uniform(low=-np.sqrt(1/f_in),
+                                        high=np.sqrt(1/f_in), 
+                                        size=(f_in, f_out)))
+        if bias:
+            self.b = Neuron(np.random.uniform(low=-np.sqrt(1/f_in),
+                                        high=np.sqrt(1/f_in), 
+                                        size=(1, f_out)))
+    def forward(self, x):
+        if self.bias:
+            x = x @ self.w + self.b.broadcast(x.shape()[0])
+        else:
+            x = x @ self.w
+        return x
+    
+    def update(self, lr):
+        self.w.value -= lr * self.w.grad
+        if self.bias:
+            self.b.value -= lr * self.b.grad
+
+
+def concatenate(x: Neuron, y:Neuron):
+    new_neuron =  Neuron(np.concatenate((x.value, y.value), axis=1)) 
+    new_neuron.children = [x,y]
+    t1 = x.value.shape[1]
+    t2 = y.value.shape[1]
+    new_neuron._local_backwards.append(lambda x: x[:, :t1])
+    new_neuron._local_backwards.append(lambda x: x[:, t1:])
+    new_neuron.op = 'concatenate'
+    return new_neuron
 
 #helper funcs
 
@@ -328,23 +358,17 @@ def one_hot(x: Neuron, classes:int) -> Neuron:
     return Neuron(a)
     
 
+def Sigmoid(x: Neuron):
+    return 1/(1+(-1 * x).exp())
 
+def Tanh(x: Neuron):
+    return (2/(1+(-2 * x).exp())) - 1
 
 def ReLU(x: Neuron)  -> Neuron:
     mask = Neuron(1 * (x.value > 0))
     return x * mask
     
-def LinearLayer(f_in:int, f_out:int, bias=True) -> Neuron:
-    neuron = Neuron(np.random.uniform(low=-np.sqrt(1/f_in),
-                                        high=np.sqrt(1/f_in), 
-                                        size=(f_in, f_out)))
-    if bias:
-        bias_neuron = Neuron(np.random.uniform(low=-np.sqrt(1/f_in),
-                                        high=np.sqrt(1/f_in), 
-                                        size=(1, f_out)))
-        return neuron,bias_neuron
-    else:
-        return neuron
+
 
 def CrossEntropy(out_soft: Neuron, oh_label: Neuron) -> Neuron:
     return -(out_soft * oh_label).sum().log().sum(0)

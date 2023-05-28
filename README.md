@@ -11,10 +11,10 @@ TODO:
 - [ ] support saving and loading of models
 - [ ] Support convolutions
 - [ ] Train a CNN on CiFAR10
+- [ ] Support Optimizer
 - [ ] Make Modules
-    - [ ] RNN
+    - [ ] CNN
     - [ ] LSTM
-    - [ ] GRU
     - [ ] Transformer
 
 Notes:
