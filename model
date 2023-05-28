@@ -1,0 +1,17 @@
+// Computation Graph
+digraph {
+	"add<TensionFlow.Neuron object at 0x7fda831d30d0>" -> "matmul<TensionFlow.Neuron object at 0x7fda8345dd30>" [label="0 indeg: 1"]
+	"add<TensionFlow.Neuron object at 0x7fda831d30d0>" -> "broadcast<TensionFlow.Neuron object at 0x7fda831d3100>" [label="1 indeg: 1"]
+	"matmul<TensionFlow.Neuron object at 0x7fda8345dd30>" -> "mul<TensionFlow.Neuron object at 0x7fda8345dc40>" [label="2 indeg: 1"]
+	"matmul<TensionFlow.Neuron object at 0x7fda8345dd30>" -> <TensionFlow.Neuron object at 0x7fda82e6c460> [label="3 indeg: 1"]
+	"broadcast<TensionFlow.Neuron object at 0x7fda831d3100>" -> <TensionFlow.Neuron object at 0x7fda831d31f0> [label="4 indeg: 1"]
+	"broadcast<TensionFlow.Neuron object at 0x7fda831d3100>" -> <TensionFlow.Neuron object at 0x7fda82e6edc0> [label="5 indeg: 1"]
+	"mul<TensionFlow.Neuron object at 0x7fda8345dc40>" -> "add<TensionFlow.Neuron object at 0x7fda8345dca0>" [label="6 indeg: 1"]
+	"mul<TensionFlow.Neuron object at 0x7fda8345dc40>" -> <TensionFlow.Neuron object at 0x7fda8345dd00> [label="7 indeg: 1"]
+	"add<TensionFlow.Neuron object at 0x7fda8345dca0>" -> "matmul<TensionFlow.Neuron object at 0x7fda830109d0>" [label="8 indeg: 1"]
+	"add<TensionFlow.Neuron object at 0x7fda8345dca0>" -> "broadcast<TensionFlow.Neuron object at 0x7fda8345deb0>" [label="9 indeg: 1"]
+	"matmul<TensionFlow.Neuron object at 0x7fda830109d0>" -> <TensionFlow.Neuron object at 0x7fda54dadb20> [label="10 indeg: 1"]
+	"matmul<TensionFlow.Neuron object at 0x7fda830109d0>" -> <TensionFlow.Neuron object at 0x7fda8374b7c0> [label="11 indeg: 1"]
+	"broadcast<TensionFlow.Neuron object at 0x7fda8345deb0>" -> <TensionFlow.Neuron object at 0x7fda83374cd0> [label="12 indeg: 1"]
+	"broadcast<TensionFlow.Neuron object at 0x7fda8345deb0>" -> <TensionFlow.Neuron object at 0x7fda82e6c4f0> [label="13 indeg: 1"]
+}

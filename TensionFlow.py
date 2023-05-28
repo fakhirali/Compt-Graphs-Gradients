@@ -25,7 +25,9 @@ class Neuron:
         else:
             new_neuron = Neuron(self.value[idx])
             new_neuron.children = [self]
-            new_neuron._local_backwards.append(lambda x: x[idx])
+            mask = np.zeros_like(self.value)
+            mask[idx] = 1
+            new_neuron._local_backwards.append(lambda x: x * mask)
             new_neuron.op = 'getitem'
             return new_neuron
     
@@ -306,6 +308,7 @@ class Neuron:
                     child.grad = None
                     stack.append(child)
 
+
     def softmax(self, dim=0):
         y = self - self.max(dim).broadcast(self.shape()[dim])
         exp = y.exp()
@@ -324,7 +327,6 @@ def one_hot(x: Neuron, classes:int) -> Neuron:
         a[i][x[i]] = 1
     return Neuron(a)
     
-
 
 
 
