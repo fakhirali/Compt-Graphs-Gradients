@@ -8,6 +8,14 @@ TODO:
 - [x] Train a NN on MNIST 
 - [x] Figure out slicing
 - [x] Test every form of gradient using pytorch
+- [ ] support saving and loading of models
+- [ ] Support convolutions
+- [ ] Train a CNN on CiFAR10
+- [ ] Make Modules
+    - [ ] RNN
+    - [ ] LSTM
+    - [ ] GRU
+    - [ ] Transformer
 
 Notes:
 Slicing does not really work
