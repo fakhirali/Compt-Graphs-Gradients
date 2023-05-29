@@ -342,7 +342,17 @@ class LinearLayer:
         self.w.value -= lr * self.w.grad
         if self.bias:
             self.b.value -= lr * self.b.grad
-
+    def save(self, fname):
+        with open(fname, 'wb') as f:
+            np.save(f, self.w.value)
+            if self.bias:
+                np.save(f, self.b.value)
+    def load(self, fname):
+        with open(fname, 'rb') as f:
+            self.w.value = np.load(f)
+            if self.bias:
+                self.b.value = np.load(f)
+    
 
 def concatenate(x: Neuron, y:Neuron):
     new_neuron =  Neuron(np.concatenate((x.value, y.value), axis=1)) 
