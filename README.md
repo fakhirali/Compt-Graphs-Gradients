@@ -8,7 +8,7 @@ TODO:
 - [x] Train a NN on MNIST 
 - [x] Figure out slicing
 - [x] Test every form of gradient using pytorch
-- [ ] support saving and loading of models
+- [x] support saving and loading of models (using pickle)
 - [ ] Support convolutions
 - [ ] Train a CNN on CiFAR10
 - [ ] Support Optimizer
