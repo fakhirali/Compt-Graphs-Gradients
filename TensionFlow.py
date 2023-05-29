@@ -168,11 +168,12 @@ class Neuron:
         return new_neuron
 
     def reshape(self, new_shape):
-        assert 1 in self.shape()
-        assert isinstance(self.value, np.ndarray)
-        self.value = self.value.reshape(new_shape)
-        return self
-    
+        new_neuron = Neuron(self.value.reshape(new_shape))
+        new_neuron.children = [self]
+        new_neuron._local_backwards.append(lambda x: x.reshape(self.value.shape))
+        new_neuron.op = 'reshape'
+        return new_neuron
+   
     def zero_grad(self):
         self.grad = None
 
@@ -204,7 +205,7 @@ class Neuron:
 
     def broadcast(self, new_shape:int):
         assert 1 in self.shape(), "There must be a 1 to broadcast the neuron"
-        assert len(self.shape()) == 2, "Only supports broadcasting of 2d neurons"
+        # assert len(self.shape()) == 2, "Only supports broadcasting of 2d neurons"
         if self.shape()[0] == 1:
             new_neuron = Neuron(np.ones((new_shape,1))) @ self
         else: 
@@ -255,7 +256,7 @@ class Neuron:
         while len(zero_indegree) != 0:
             root = zero_indegree.pop(0)
             for child in root.children:
-                dot.edge(root.op+str(root), child.op + str(child), label=str(i)+' indeg: '+str(indegree[child]))
+                dot.edge(root.op+str(root), child.op + str(child), label=str(i))
                 indegree[child] -= 1
                 if indegree[child] == 0:
                     zero_indegree.append(child)
@@ -284,7 +285,12 @@ class Neuron:
                 if indegree[child] == 0:
                     zero_indegree.append(child)    
         
-        
+    def transpose(self):
+        new_neuron = Neuron(self.value.T)
+        new_neuron.children = [self]
+        new_neuron._local_backwards.append(lambda x: x.T)
+        new_neuron.op = 'transpose'
+        return new_neuron 
         # root = self
         # stack = [root]
         # while len(stack) != 0:
