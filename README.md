@@ -18,5 +18,3 @@ TODO:
     - [ ] Transformer
 
 Notes:
-Slicing does not really work
-There is no transpose
