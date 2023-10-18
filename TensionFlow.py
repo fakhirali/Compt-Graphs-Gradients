@@ -189,7 +189,19 @@ class Neuron:
         new_neuron._local_backwards.append(lambda x: x * temp)
         new_neuron.op = 'log'
         return new_neuron
-         
+
+    def log2(self):
+        new_val = np.log2(self.value)
+        if np.inf in new_val or -np.inf in new_val:
+            warnings.warn("inf in log, replacing with zero")
+            new_val[new_val==np.inf] = 0
+            new_val[new_val==-np.inf] = 0
+        new_neuron = Neuron(new_val)
+        temp = 1/(self.value * np.log(2))
+        new_neuron.children = [self]
+        new_neuron._local_backwards.append(lambda x: x * temp)
+        new_neuron.op = 'log2'
+        return new_neuron
         
     def exp(self):
         # self,other_neuron = self._handle_back_add()
